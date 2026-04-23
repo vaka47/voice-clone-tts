@@ -1,0 +1,3 @@
+audio_path,text,speaker
+/absolute/path/to/clip_001.wav,Привет. Это первая обучающая фраза.,demo_speaker
+/absolute/path/to/clip_002.wav,Это вторая фраза для подготовки датасета.,demo_speaker

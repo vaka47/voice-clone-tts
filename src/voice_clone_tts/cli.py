@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 from .audio import prepare_reference_voice
+from .dataset import build_ljspeech_dataset, dataset_stats, format_stats
 from .xtts import SynthesisSettings, XttsVoiceCloner, validate_xtts_model_dir
 
 
@@ -67,6 +68,19 @@ def cmd_synthesize(args: argparse.Namespace) -> None:
     print(out)
 
 
+def cmd_build_dataset(args: argparse.Namespace) -> None:
+    metadata = build_ljspeech_dataset(
+        args.manifest,
+        args.output_dir,
+        copy_without_conversion=args.copy_without_conversion,
+    )
+    print(metadata)
+
+
+def cmd_dataset_stats(args: argparse.Namespace) -> None:
+    print(format_stats(dataset_stats(args.dataset_dir)))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="voice-clone-tts")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -81,6 +95,19 @@ def build_parser() -> argparse.ArgumentParser:
     prepare.add_argument("--start-sec", type=float, default=0.0)
     prepare.add_argument("--duration-sec", type=float, default=45.0)
     prepare.set_defaults(func=cmd_prepare_reference)
+
+    dataset = subparsers.add_parser(
+        "build-dataset",
+        help="Build an LJSpeech-style fine-tuning dataset from audio+transcript CSV.",
+    )
+    dataset.add_argument("--manifest", type=Path, required=True)
+    dataset.add_argument("--output-dir", type=Path, required=True)
+    dataset.add_argument("--copy-without-conversion", action="store_true")
+    dataset.set_defaults(func=cmd_build_dataset)
+
+    stats = subparsers.add_parser("dataset-stats", help="Print duration stats for a prepared dataset.")
+    stats.add_argument("--dataset-dir", type=Path, required=True)
+    stats.set_defaults(func=cmd_dataset_stats)
 
     synth = subparsers.add_parser("synthesize", help="Synthesize text in the target voice.")
     synth.add_argument("--text", default="")

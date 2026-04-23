@@ -9,6 +9,7 @@ The pipeline accepts a reference speech recording, prepares a clean voice sample
 - Local-first voice cloning workflow with XTTS.
 - Reference voice preprocessing: mono conversion, resampling, trimming.
 - Chunked long-text synthesis with configurable pauses.
+- Fine-tuning dataset preparation from audio+transcript manifests.
 - Reproducible CLI for turning any text file into narrated audio.
 - Safe project structure: no model weights, private voice samples, or generated audio committed to git.
 
@@ -30,6 +31,7 @@ Full speaker fine-tuning is intentionally not included in this portfolio version
 src/voice_clone_tts/
   cli.py          # command-line interface
   audio.py        # reference voice preparation and WAV concatenation
+  dataset.py      # fine-tuning dataset preparation and stats
   text.py         # text normalization and chunking
   xtts.py         # XTTS model loading and synthesis
 samples/
@@ -105,6 +107,21 @@ Check local XTTS files:
 python -m voice_clone_tts.cli check-model --model-dir /path/to/xtts_v2
 ```
 
+Prepare a fine-tuning dataset from audio+transcript pairs:
+
+```bash
+python -m voice_clone_tts.cli build-dataset \
+  --manifest examples/manifest.example.csv \
+  --output-dir data/processed/demo_speaker
+```
+
+Print dataset statistics:
+
+```bash
+python -m voice_clone_tts.cli dataset-stats \
+  --dataset-dir data/processed/demo_speaker
+```
+
 Prepare a reference:
 
 ```bash
@@ -138,6 +155,10 @@ python -m voice_clone_tts.cli synthesize \
 Only clone voices you own or have explicit permission to use. Do not publish reference samples or generated voice outputs without consent.
 
 See [docs/ETHICS.md](docs/ETHICS.md).
+
+## Fine-Tuning
+
+See [docs/FINE_TUNING.md](docs/FINE_TUNING.md) for the difference between zero-shot voice cloning and actual weight fine-tuning.
 
 ## Portfolio Positioning
 

@@ -13,6 +13,21 @@ flowchart LR
     I --> J["Final narrated audio"]
 ```
 
+## Optional Fine-Tuning Data Flow
+
+```mermaid
+flowchart LR
+    A["Consented speech recordings"] --> B["Manual/ASR transcripts"]
+    B --> C["manifest.csv"]
+    A --> C
+    C --> D["build-dataset"]
+    D --> E["LJSpeech-style dataset"]
+    E --> F["dataset-stats"]
+    E --> G["XTTS fine-tuning tools"]
+    G --> H["Fine-tuned checkpoint"]
+    H --> I["synthesize"]
+```
+
 ## Pipeline
 
 1. `prepare-reference` loads the source recording with `librosa`, resamples to 24 kHz, converts to mono, optionally trims the useful segment, and writes PCM WAV.
