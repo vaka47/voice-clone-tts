@@ -274,11 +274,11 @@ def build_app(default_output: Path) -> gr.Blocks:
     return demo
 
 
-def main() -> None:
+def main(default_output_dir: Path | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=7860)
-    parser.add_argument("--output-dir", type=Path, default=Path("workspace"))
+    parser.add_argument("--output-dir", type=Path, default=default_output_dir or Path("workspace"))
     parser.add_argument("--share", action="store_true")
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()

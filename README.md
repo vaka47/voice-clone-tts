@@ -82,6 +82,8 @@ The project includes PyInstaller build scripts and a GitHub Actions workflow for
 - `VoiceCloneTrainer-macOS.zip`
 - `VoiceCloneTrainer-Windows.zip`
 
+The portable build opens a local browser interface after launch. It is packaged as an app folder archive rather than a single binary because XTTS, PyTorch, and Gradio are more reliable in `onedir` mode.
+
 See [docs/PORTABLE_APP.md](docs/PORTABLE_APP.md).
 
 Prepare a reference voice:

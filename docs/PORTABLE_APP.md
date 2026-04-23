@@ -2,17 +2,20 @@
 
 This project can be packaged into downloadable macOS and Windows archives with PyInstaller.
 
+The portable build is distributed as an extracted app folder, not a single self-extracting binary. This is more reliable for PyTorch and XTTS dependencies than a `--onefile` bundle.
+
 ## User Flow
 
 1. Download the archive for your OS.
 2. Unzip it.
 3. Open `VoiceCloneTrainer`.
-4. Upload 1-5 voice reference segments.
-5. Paste or upload the exact transcript for each segment.
-6. Click **Train voice**.
-7. Upload a new text file.
-8. Click **Generate audio file**.
-9. Download the generated WAV.
+4. The app starts a local interface and opens it in the default browser.
+5. Upload 1-5 voice reference segments.
+6. Paste or upload the exact transcript for each segment.
+7. Click **Train voice**.
+8. Upload a new text file.
+9. Click **Generate audio file**.
+10. Download the generated WAV.
 
 ## Important Limitation
 

@@ -10,7 +10,6 @@ python3 -m PyInstaller \
   --clean \
   --noconfirm \
   --name VoiceCloneTrainer \
-  --onefile \
   --windowed \
   --paths src \
   --collect-all gradio \
@@ -23,7 +22,7 @@ mkdir -p release
 if [[ -d "dist/VoiceCloneTrainer.app" ]]; then
   ditto -c -k --sequesterRsrc --keepParent "dist/VoiceCloneTrainer.app" "release/VoiceCloneTrainer-macOS.zip"
 else
-  ditto -c -k "dist/VoiceCloneTrainer" "release/VoiceCloneTrainer-macOS.zip"
+  ditto -c -k --keepParent "dist/VoiceCloneTrainer" "release/VoiceCloneTrainer-macOS.zip"
 fi
 
 echo "release/VoiceCloneTrainer-macOS.zip"

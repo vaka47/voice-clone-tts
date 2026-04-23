@@ -9,7 +9,6 @@ python -m PyInstaller `
   --clean `
   --noconfirm `
   --name VoiceCloneTrainer `
-  --onefile `
   --windowed `
   --paths src `
   --collect-all gradio `
@@ -19,6 +18,6 @@ python -m PyInstaller `
   launcher.py
 
 New-Item -ItemType Directory -Force -Path release | Out-Null
-Compress-Archive -Path dist/VoiceCloneTrainer.exe -DestinationPath release/VoiceCloneTrainer-Windows.zip -Force
+Compress-Archive -Path dist/VoiceCloneTrainer -DestinationPath release/VoiceCloneTrainer-Windows.zip -Force
 
 Write-Output "release/VoiceCloneTrainer-Windows.zip"
