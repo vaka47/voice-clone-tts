@@ -12,6 +12,8 @@ python -m PyInstaller `
   --windowed `
   --paths src `
   --collect-all gradio `
+  --collect-all gradio_client `
+  --collect-all safehttpx `
   --collect-all TTS `
   --collect-all trainer `
   --collect-all coqpit `
