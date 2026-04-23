@@ -2,7 +2,7 @@
 
 Clean portfolio project for local voice cloning and text-to-speech generation.
 
-The pipeline accepts a reference speech recording, prepares a clean voice sample, loads a local XTTS model, and synthesizes arbitrary text in the target voice.
+The pipeline accepts up to five consented reference recordings with exact transcripts, prepares a fine-tuning dataset, trains an XTTS speaker adaptation, and synthesizes arbitrary text in the trained voice.
 
 ## What This Project Demonstrates
 
@@ -10,20 +10,19 @@ The pipeline accepts a reference speech recording, prepares a clean voice sample
 - Reference voice preprocessing: mono conversion, resampling, trimming.
 - Chunked long-text synthesis with configurable pauses.
 - Fine-tuning dataset preparation from audio+transcript manifests.
+- Web app for training a voice from up to five aligned reference segments.
+- Fine-tuned checkpoint inference for arbitrary text files.
 - Reproducible CLI for turning any text file into narrated audio.
 - Safe project structure: no model weights, private voice samples, or generated audio committed to git.
 
-## Important Note About "Training"
+## Important Note About Training
 
-XTTS v2 usually works through **zero-shot voice cloning**: it does not fine-tune model weights for every new speaker. Instead, the model conditions generation on a short reference recording.
+XTTS v2 supports two practical modes:
 
-In this repository, "create a voice" means:
+- **Zero-shot voice cloning:** the pretrained model uses a reference recording at inference time and does not change weights.
+- **Fine-tuning:** the GPT encoder is adapted on `audio + exact transcript` pairs, producing a speaker-specific checkpoint.
 
-1. provide a consented reference voice sample;
-2. prepare it into a clean 24 kHz mono WAV;
-3. use it as `speaker_wav` during synthesis.
-
-Full speaker fine-tuning is intentionally not included in this portfolio version.
+This repository includes both the zero-shot CLI path and the fine-tuning web app path.
 
 ## Repository Structure
 
@@ -32,6 +31,9 @@ src/voice_clone_tts/
   cli.py          # command-line interface
   audio.py        # reference voice preparation and WAV concatenation
   dataset.py      # fine-tuning dataset preparation and stats
+  training.py     # XTTS fine-tuning workflow
+  finetuned.py    # inference from a fine-tuned checkpoint
+  web_app.py      # Gradio UI for training and generation
   text.py         # text normalization and chunking
   xtts.py         # XTTS model loading and synthesis
 samples/
@@ -41,6 +43,8 @@ examples/
 docs/
   ETHICS.md
   ARCHITECTURE.md
+  FINE_TUNING.md
+  PORTABLE_APP.md
 ```
 
 ## Quick Start
@@ -63,13 +67,22 @@ python -m voice_clone_tts.web_app
 
 Open the local URL shown in the terminal. The app exposes the main workflow:
 
-1. upload a consented speech recording;
-2. paste or upload the exact transcript;
+1. upload 1-5 consented speech recordings;
+2. paste or upload the exact transcript for each recording;
 3. click **Train voice**;
 4. upload a new text file;
 5. click **Generate audio file**.
 
 The transcript must be identical to the spoken audio. If words are missing, added, or reordered, the fine-tuned model can learn unstable pronunciation and intonation.
+
+## Downloadable App Builds
+
+The project includes PyInstaller build scripts and a GitHub Actions workflow for portable macOS and Windows builds:
+
+- `VoiceCloneTrainer-macOS.zip`
+- `VoiceCloneTrainer-Windows.zip`
+
+See [docs/PORTABLE_APP.md](docs/PORTABLE_APP.md).
 
 Prepare a reference voice:
 

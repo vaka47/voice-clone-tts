@@ -26,6 +26,12 @@ class TrainingArtifacts:
     stats: str
 
 
+@dataclass(frozen=True)
+class TrainingSegment:
+    audio_path: Path
+    transcript: str
+
+
 def optional_site_packages() -> Path | None:
     raw = os.environ.get("VOICE_CLONE_SITE_PACKAGES")
     return Path(raw).expanduser() if raw else None
@@ -82,12 +88,32 @@ def build_exact_transcript_dataset(
     proportionally by character count. This is a practical portfolio workflow; for
     production quality, use manually segmented clips or forced alignment.
     """
-    audio_path = audio_path.expanduser()
+    return build_segment_dataset(
+        segments=[TrainingSegment(audio_path=audio_path, transcript=transcript)],
+        output_dir=output_dir,
+        speaker=speaker,
+        language=language,
+        max_clip_sec=max_clip_sec,
+        max_chars=max_chars,
+        eval_ratio=eval_ratio,
+    )
+
+
+def rows_from_segment(
+    *,
+    segment: TrainingSegment,
+    wavs_dir: Path,
+    speaker: str,
+    start_index: int,
+    max_clip_sec: float,
+    max_chars: int,
+) -> list[dict[str, str]]:
+    audio_path = segment.audio_path.expanduser()
     if not audio_path.exists():
         raise FileNotFoundError(audio_path)
-    transcript = transcript.strip()
+    transcript = segment.transcript.strip()
     if not transcript:
-        raise ValueError("Transcript is empty.")
+        raise ValueError(f"Transcript is empty for {audio_path}.")
 
     audio, sr = load_audio(audio_path)
     total_samples = len(audio)
@@ -102,9 +128,6 @@ def build_exact_transcript_dataset(
 
     weights = [max(1, len(chunk)) for chunk in chunks]
     total_weight = sum(weights)
-    wavs_dir = output_dir / "wavs"
-    wavs_dir.mkdir(parents=True, exist_ok=True)
-
     rows: list[dict[str, str]] = []
     cursor = 0
     for idx, (chunk, weight) in enumerate(zip(chunks, weights), start=1):
@@ -115,11 +138,47 @@ def build_exact_transcript_dataset(
         if end <= cursor:
             continue
 
-        stem = f"{speaker}_{idx:05d}"
+        stem = f"{speaker}_{start_index + idx - 1:05d}"
         rel_audio = f"wavs/{stem}.wav"
         write_wav(wavs_dir / f"{stem}.wav", audio[cursor:end], sr)
         rows.append({"audio_file": rel_audio, "text": chunk, "speaker_name": speaker})
         cursor = end
+
+    return rows
+
+
+def build_segment_dataset(
+    *,
+    segments: list[TrainingSegment],
+    output_dir: Path,
+    speaker: str = "speaker",
+    language: str = "ru",
+    max_clip_sec: float = 12.0,
+    max_chars: int = 180,
+    eval_ratio: float = 0.15,
+) -> tuple[Path, Path, str]:
+    """Create Coqui XTTS train/eval CSVs from up to several exact audio+text pairs."""
+    del language
+    valid_segments = [segment for segment in segments if segment.audio_path and segment.transcript.strip()]
+    if not valid_segments:
+        raise ValueError("Provide at least one audio segment with an exact transcript.")
+
+    wavs_dir = output_dir / "wavs"
+    wavs_dir.mkdir(parents=True, exist_ok=True)
+
+    rows: list[dict[str, str]] = []
+    next_index = 1
+    for segment in valid_segments:
+        segment_rows = rows_from_segment(
+            segment=segment,
+            wavs_dir=wavs_dir,
+            speaker=speaker,
+            start_index=next_index,
+            max_clip_sec=max_clip_sec,
+            max_chars=max_chars,
+        )
+        rows.extend(segment_rows)
+        next_index += len(segment_rows)
 
     if len(rows) < 2:
         # Coqui training expects train/eval paths. Duplicate the single row for a
@@ -211,6 +270,49 @@ def train_from_single_recording(
     train_csv, eval_csv, stats = build_exact_transcript_dataset(
         audio_path=audio_path,
         transcript=transcript,
+        output_dir=dataset_dir,
+        speaker=speaker,
+        language=language,
+        max_clip_sec=max_clip_sec,
+    )
+    checkpoint, config, vocab, run_dir, speaker_wav = train_xtts_gpt(
+        language=language,
+        train_csv=train_csv,
+        eval_csv=eval_csv,
+        output_dir=output_dir,
+        num_epochs=num_epochs,
+        batch_size=batch_size,
+        grad_accum=grad_accum,
+        max_audio_length_sec=max_clip_sec,
+    )
+    return TrainingArtifacts(
+        dataset_dir=dataset_dir,
+        train_csv=train_csv,
+        eval_csv=eval_csv,
+        checkpoint=checkpoint,
+        config=config,
+        vocab=vocab,
+        speaker_wav=speaker_wav,
+        run_dir=run_dir,
+        stats=stats,
+    )
+
+
+def train_from_segments(
+    *,
+    segments: list[TrainingSegment],
+    output_dir: Path,
+    language: str = "ru",
+    speaker: str = "speaker",
+    num_epochs: int = 6,
+    batch_size: int = 2,
+    grad_accum: int = 2,
+    max_clip_sec: int = 12,
+) -> TrainingArtifacts:
+    dataset_dir = output_dir / "dataset"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    train_csv, eval_csv, stats = build_segment_dataset(
+        segments=segments,
         output_dir=dataset_dir,
         speaker=speaker,
         language=language,

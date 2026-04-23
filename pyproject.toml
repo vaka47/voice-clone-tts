@@ -18,6 +18,7 @@ dependencies = [
 
 [project.scripts]
 voice-clone-tts = "voice_clone_tts.cli:main"
+voice-clone-tts-app = "voice_clone_tts.web_app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

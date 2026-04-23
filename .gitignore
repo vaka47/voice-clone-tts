@@ -5,6 +5,10 @@ __pycache__/
 .env
 .venv/
 venv/
+build/
+dist/
+release/
+*.spec
 
 # Local models and caches
 .cache/

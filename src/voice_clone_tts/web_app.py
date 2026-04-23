@@ -12,7 +12,7 @@ except Exception as exc:  # pragma: no cover
     raise RuntimeError("Install gradio to run the web app: `pip install gradio`.") from exc
 
 from .finetuned import FineTunedXttsSynthesizer
-from .training import train_from_single_recording
+from .training import TrainingSegment, train_from_segments
 from .xtts import SynthesisSettings
 
 
@@ -38,9 +38,21 @@ def safe_run_dir(base_dir: str, speaker: str) -> Path:
 
 
 def train_ui(
-    audio_file: str | None,
-    transcript_text: str,
-    transcript_file: str | None,
+    audio_1: str | None,
+    transcript_text_1: str,
+    transcript_file_1: str | None,
+    audio_2: str | None,
+    transcript_text_2: str,
+    transcript_file_2: str | None,
+    audio_3: str | None,
+    transcript_text_3: str,
+    transcript_file_3: str | None,
+    audio_4: str | None,
+    transcript_text_4: str,
+    transcript_file_4: str | None,
+    audio_5: str | None,
+    transcript_text_5: str,
+    transcript_file_5: str | None,
     language: str,
     speaker_name: str,
     output_root: str,
@@ -51,14 +63,34 @@ def train_ui(
     progress=gr.Progress(track_tqdm=True),
 ):
     del progress
-    if not audio_file:
-        return "Upload a training audio file first.", "", "", "", "", ""
+    raw_segments = [
+        (audio_1, transcript_text_1, transcript_file_1),
+        (audio_2, transcript_text_2, transcript_file_2),
+        (audio_3, transcript_text_3, transcript_file_3),
+        (audio_4, transcript_text_4, transcript_file_4),
+        (audio_5, transcript_text_5, transcript_file_5),
+    ]
     try:
-        transcript = read_transcript(transcript_text, transcript_file)
+        segments: list[TrainingSegment] = []
+        missing_transcripts: list[str] = []
+        for idx, (audio_file, transcript_text, transcript_file) in enumerate(raw_segments, start=1):
+            if not audio_file:
+                continue
+            transcript = read_transcript(transcript_text, transcript_file)
+            if not transcript:
+                missing_transcripts.append(str(idx))
+                continue
+            segments.append(TrainingSegment(audio_path=Path(audio_file), transcript=transcript))
+
+        if not segments:
+            return "Upload at least one audio segment and its exact transcript.", "", "", "", "", ""
+        if missing_transcripts:
+            joined = ", ".join(missing_transcripts)
+            return f"Missing exact transcript for segment(s): {joined}.", "", "", "", "", ""
+
         run_dir = safe_run_dir(output_root, speaker_name)
-        artifacts = train_from_single_recording(
-            audio_path=Path(audio_file),
-            transcript=transcript,
+        artifacts = train_from_segments(
+            segments=segments,
             output_dir=run_dir,
             language=language,
             speaker=speaker_name,
@@ -70,6 +102,7 @@ def train_ui(
         status = "\n".join(
             [
                 "Training completed.",
+                f"Training segments: {len(segments)}",
                 "",
                 "Dataset stats:",
                 artifacts.stats,
@@ -144,18 +177,33 @@ def build_app(default_output: Path) -> gr.Blocks:
         )
         gr.Markdown(
             """
-            **Critical quality rule:** the transcript must match the uploaded speech word-for-word. If the text and audio differ, training quality drops and the model can learn wrong pronunciation or unstable intonation.
+            **Critical quality rule:** every transcript must match its audio segment word-for-word. If the text and audio differ, training quality drops and the model can learn wrong pronunciation or unstable intonation.
 
-            For best results, use clean speech without music/noise. A single long recording is supported, but multiple short aligned clips are better for production-quality fine-tuning.
+            Upload 1-5 clean reference segments. More exact segments usually produce better speaker similarity than one long recording.
             """
         )
 
         with gr.Tab("1. Train Voice"):
             with gr.Row():
                 with gr.Column(scale=1):
-                    audio_file = gr.Audio(label="Insert audio file", type="filepath", sources=["upload"])
-                    transcript_file = gr.File(label="Optional transcript .txt", file_types=[".txt"], type="filepath")
-                    transcript_text = gr.Textbox(label="Or paste exact transcript", lines=10)
+                    segment_inputs = []
+                    for idx in range(1, 6):
+                        with gr.Accordion(f"Reference segment {idx}", open=idx == 1):
+                            audio = gr.Audio(
+                                label=f"Insert audio file {idx}",
+                                type="filepath",
+                                sources=["upload"],
+                            )
+                            transcript_file = gr.File(
+                                label=f"Optional transcript .txt {idx}",
+                                file_types=[".txt"],
+                                type="filepath",
+                            )
+                            transcript_text = gr.Textbox(
+                                label=f"Or paste exact transcript {idx}",
+                                lines=4,
+                            )
+                            segment_inputs.extend([audio, transcript_text, transcript_file])
                     language = gr.Dropdown(label="Language", choices=LANGUAGES, value="ru")
                 with gr.Column(scale=1):
                     speaker_name = gr.Textbox(label="Speaker name", value="trained_voice")
@@ -177,9 +225,7 @@ def build_app(default_output: Path) -> gr.Blocks:
             train_button.click(
                 train_ui,
                 inputs=[
-                    audio_file,
-                    transcript_text,
-                    transcript_file,
+                    *segment_inputs,
                     language,
                     speaker_name,
                     output_root,
@@ -234,11 +280,17 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=7860)
     parser.add_argument("--output-dir", type=Path, default=Path("workspace"))
     parser.add_argument("--share", action="store_true")
+    parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     app = build_app(args.output_dir)
-    app.launch(server_name=args.host, server_port=args.port, share=args.share)
+    app.launch(
+        server_name=args.host,
+        server_port=args.port,
+        share=args.share,
+        inbrowser=not args.no_browser,
+    )
 
 
 if __name__ == "__main__":
