@@ -1,0 +1,31 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+
+.env
+.venv/
+venv/
+
+# Local models and caches
+.cache/
+models/
+*.pth
+*.safetensors
+
+# Private reference voices and generated audio
+samples/*.wav
+samples/*.mp3
+samples/*.m4a
+samples/*.aiff
+!samples/README.md
+output/
+*.wav
+*.mp3
+*.m4a
+*.aiff
+
+# Large archives
+*.zip
+*.tar
+*.tar.gz
+*.7z
