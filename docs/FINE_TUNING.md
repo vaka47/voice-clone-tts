@@ -35,6 +35,20 @@ For credible fine-tuning, a single untranscribed MP3 is not enough. A practical 
 - short clips, ideally 3-15 seconds each;
 - no music, reverb, overlapping speech, or background noise.
 
+## Single Audio + Exact Transcript Mode
+
+The web app supports a portfolio-friendly mode where you upload one speech recording and paste the full transcript. The app then slices the recording into phrase-level clips based on transcript chunks.
+
+This works best when:
+
+- the audio contains only one speaker;
+- the transcript is word-for-word identical to the audio;
+- there are natural pauses between phrases;
+- the recording is clean and dry;
+- the total duration is at least several minutes.
+
+For serious production quality, manually segmented clips or forced alignment are better than proportional slicing.
+
 ## Portfolio-Friendly Pipeline
 
 This repository supports the first production-relevant fine-tuning step: dataset preparation.

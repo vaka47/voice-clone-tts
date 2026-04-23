@@ -19,6 +19,8 @@ samples/*.m4a
 samples/*.aiff
 !samples/README.md
 output/
+workspace/
+data/
 *.wav
 *.mp3
 *.m4a

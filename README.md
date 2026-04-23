@@ -53,6 +53,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Web App
+
+Run the portfolio UI:
+
+```bash
+python -m voice_clone_tts.web_app
+```
+
+Open the local URL shown in the terminal. The app exposes the main workflow:
+
+1. upload a consented speech recording;
+2. paste or upload the exact transcript;
+3. click **Train voice**;
+4. upload a new text file;
+5. click **Generate audio file**.
+
+The transcript must be identical to the spoken audio. If words are missing, added, or reordered, the fine-tuned model can learn unstable pronunciation and intonation.
+
 Prepare a reference voice:
 
 ```bash
